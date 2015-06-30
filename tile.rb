@@ -10,9 +10,9 @@ class Tile
             [ 0, -1]
           ]
 
-  attr_reader :pos
+  attr_reader :position
 
-  def initialize(board,pos, bombed = false)
+  def initialize(board, position, bombed=false)
     @board = board
     @position = position
     @bombed = bombed
@@ -32,8 +32,15 @@ class Tile
     @revealed
   end
 
+  #Only change the flag if the tile has not yet been revealed
   def change_flag
-    @flagged = !@flagged
+    @flagged = !@flagged unless revealed?
+  end
+
+  #This is used to reveal the board at the end of the game.
+  #In order to reveal all of the bombs we cannot reveal the flags.
+  def unflag
+    @flagged = false
   end
 
   def reveal
@@ -45,9 +52,10 @@ class Tile
   end
 
   def neighbors
-    all = all_possible_neighbors
+    valid_neighbours = all_possible_neighbors.select { |pos| on_board?(pos)}
 
-    all.select {|pos| on_board?(pos)}
+    # Make sure we return the tiles and not only the positions
+    valid_neighbours.map{ |pos| @board[*pos] }
   end
 
   def all_possible_neighbors
@@ -61,10 +69,10 @@ class Tile
   end
 
   def on_board?(pos)
-    rows = @board.size
-    cols = @board[0].size
+    rows = @board.rows
+    cols = @board.cols
 
-    pos[0].between?(0...rows) && pos[1].between?(0...cols)
+    pos[0].between?(0, rows - 1) && pos[1].between?(0, cols - 1)
   end
 
   def neighbors_bomb_count
@@ -80,7 +88,9 @@ class Tile
       "F"
     elsif revealed?
       num = neighbors_bomb_count
-      if num > 0
+      if bombed?
+        "B"
+      elsif num > 0
         "#{num}"
       else
         "_"
